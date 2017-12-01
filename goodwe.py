@@ -4,14 +4,12 @@ import configparser
 import os
 import errno
 
-
 def make_sure_path_exists(path):
     try:
         os.makedirs(path)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
-
 
 class ScraperSession(requests.Session):
     def __init__(self, configfile='goodwe.cfg'):
@@ -66,7 +64,6 @@ class ScraperSession(requests.Session):
         with open(f"{folder}{fileName}", mode='wb') as f:
             f.write(response.content)
         return True
-
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(name)s:%(levelname)s:%(message)s', level=logging.INFO)
