@@ -1,7 +1,15 @@
 import requests
 import logging
 import configparser
+import os
+import errno
 
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
 
 class ScraperSession(requests.Session):
     def __init__(self, configfile='goodwe.cfg'):
@@ -39,11 +47,11 @@ class ScraperSession(requests.Session):
         export_url = "http://www.goodwe-power.com/PowerStationPlatform/PowerStationReport/ExportHistoryData"
         return self.post(export_url, json=payload).json()
 
-    def download_export(self, result):
+    def download_export(self, result, folder="downloads/"):
         if result["result"] != 'true':
             logger.error("Cannot download failed export")
-            return
-
+            return False
+        make_sure_path_exists(folder)
         downloadFilePath = result["downloadFilePath"]
         fileName = result["fileName"]
         logging.info(f"Downloading export {fileName}")
@@ -51,12 +59,13 @@ class ScraperSession(requests.Session):
         url = "http://www.goodwe-power.com/PowerStationPlatform/PowerStationReport/DownloadFile"
         dl_url = f"{url}?ID={self.stationId}&downloadFilePath={downloadFilePath}&fileName={fileName}"
         response = self.get(dl_url)
-        with open(fileName, mode='wb') as f:
+        with open(f"{folder}{fileName}", mode='wb') as f:
             f.write(response.content)
+        return True
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(name)s:%(levelname)s:%(message)s', level=logging.INFO)
-    dates = [f"2016-{month:02}-01" for month in range(1, 2)]
+    dates = [f"2016-{month:02}-01" for month in range(1, 13)]
     with ScraperSession() as s:
         for date in dates:
             export = s.request_export(date)
